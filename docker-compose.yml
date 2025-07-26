@@ -1,21 +1,22 @@
 services:
-  postgres:
-    image: postgres:15
+  mysql:
+    image: mysql:8.0
     container_name: timefruit-db
     restart: unless-stopped
     ports:
-      - "5432:5432"
+      - "3306:3306"
     environment:
-      POSTGRES_DB: timefruit
-      POSTGRES_USER: timefruit_user
-      POSTGRES_PASSWORD: timefruit_password
+      MYSQL_DATABASE: timefruit
+      MYSQL_USER: timefruit_user
+      MYSQL_PASSWORD: timefruit_password
+      MYSQL_ROOT_PASSWORD: timefruit_root_password
     networks:
       - timefruit-network
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - mysql_data:/var/lib/mysql
       - ./db/init:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U timefruit_user -d timefruit"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "timefruit_user", "-ptimefruit_password"]
       timeout: 5s
       retries: 10
 
@@ -30,8 +31,8 @@ services:
       - NODE_ENV=development
       - PORT=3001
       - FRONTEND_URL=http://localhost:3000
-      - DB_HOST=postgres
-      - DB_PORT=5432
+      - DB_HOST=mysql
+      - DB_PORT=3306
       - DB_NAME=timefruit
       - DB_USER=timefruit_user
       - DB_PASSWORD=timefruit_password
@@ -44,7 +45,7 @@ services:
     working_dir: /app
     command: sh -c "npm install && npm run dev"
     depends_on:
-      postgres:
+      mysql:
         condition: service_healthy
 
   frontend:
@@ -73,4 +74,4 @@ networks:
 volumes:
   backend_node_modules:
   frontend_node_modules:
-  postgres_data:
+  mysql_data:

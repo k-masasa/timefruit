@@ -17,12 +17,20 @@ export const createTimeRecord = async (req: Request, res: Response) => {
 
     const { category, hours, memo }: CreateTimeRecordRequest = value;
 
-    const result = await pool.query(
-      'INSERT INTO time_records (category, hours, memo) VALUES ($1, $2, $3) RETURNING *',
+    const [result] = await pool.execute(
+      'INSERT INTO time_records (category, hours, memo) VALUES (?, ?, ?)',
       [category, hours, memo || null]
     );
 
-    const newRecord: TimeRecord = result.rows[0];
+    const insertResult = result as any;
+    const insertId = insertResult.insertId;
+
+    const [selectResult] = await pool.execute(
+      'SELECT * FROM time_records WHERE id = ?',
+      [insertId]
+    );
+
+    const newRecord: TimeRecord = (selectResult as any[])[0];
 
     res.status(201).json({
       success: true,
@@ -42,12 +50,12 @@ export const getTodaysTimeRecords = async (req: Request, res: Response) => {
   try {
     const today = new Date().toISOString().split('T')[0];
     
-    const result = await pool.query(
-      'SELECT * FROM time_records WHERE date = $1 ORDER BY created_at DESC',
+    const [result] = await pool.execute(
+      'SELECT * FROM time_records WHERE date = ? ORDER BY created_at DESC',
       [today]
     );
 
-    const records: TimeRecord[] = result.rows;
+    const records: TimeRecord[] = result as TimeRecord[];
 
     res.json({
       success: true,
@@ -65,11 +73,11 @@ export const getTodaysTimeRecords = async (req: Request, res: Response) => {
 
 export const getAllTimeRecords = async (req: Request, res: Response) => {
   try {
-    const result = await pool.query(
+    const [result] = await pool.execute(
       'SELECT * FROM time_records ORDER BY date DESC, created_at DESC'
     );
 
-    const records: TimeRecord[] = result.rows;
+    const records: TimeRecord[] = result as TimeRecord[];
 
     res.json({
       success: true,
@@ -89,22 +97,29 @@ export const deleteTimeRecord = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    const result = await pool.query(
-      'DELETE FROM time_records WHERE id = $1 RETURNING *',
+    const [selectResult] = await pool.execute(
+      'SELECT * FROM time_records WHERE id = ?',
       [id]
     );
 
-    if (result.rows.length === 0) {
+    if ((selectResult as any[]).length === 0) {
       return res.status(404).json({
         success: false,
         message: 'Time record not found'
       });
     }
 
+    const recordToDelete = (selectResult as any[])[0];
+
+    await pool.execute(
+      'DELETE FROM time_records WHERE id = ?',
+      [id]
+    );
+
     res.json({
       success: true,
       message: 'Time record deleted successfully',
-      data: result.rows[0]
+      data: recordToDelete
     });
   } catch (error) {
     console.error('Error deleting time record:', error);

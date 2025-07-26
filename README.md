@@ -18,16 +18,16 @@
 ┌─────────────────┐   ┌─────────────────┐   ┌─────────────────┐
 │    Frontend     │   │     Backend     │   │    Database     │
 │                 │   │                 │   │                 │
-│  React + TS     │◄──┤ Node.js + TS    │◄──┤   PostgreSQL    │
-│     Vite        │   │    Express      │   │       15        │
-│   Port: 3000    │   │   Port: 3001    │   │   Port: 5432    │
+│ Nuxt.js + TS    │◄──┤ Node.js + TS    │◄──┤     MySQL       │
+│     Vue 3       │   │    Express      │   │       8.0       │
+│   Port: 3000    │   │   Port: 3001    │   │   Port: 3306    │
 └─────────────────┘   └─────────────────┘   └─────────────────┘
 ```
 
 ### 技術スタック
-- **Frontend**: React + TypeScript + Vite
-- **Backend**: Node.js + Express + TypeScript
-- **Database**: PostgreSQL 15
+- **Frontend**: Nuxt.js + Vue 3 + TypeScript
+- **Backend**: Node.js + Express + TypeScript + TypeORM
+- **Database**: MySQL 8.0
 - **Container**: Docker Compose
 
 ## 🚀 セットアップ方法
@@ -59,11 +59,12 @@ docker compose up --build
 #### データベース
 ```bash
 docker run -d --name timefruit-db \
-  -e POSTGRES_DB=timefruit \
-  -e POSTGRES_USER=timefruit_user \
-  -e POSTGRES_PASSWORD=timefruit_password \
-  -p 5432:5432 \
-  postgres:15
+  -e MYSQL_DATABASE=timefruit \
+  -e MYSQL_USER=timefruit_user \
+  -e MYSQL_PASSWORD=timefruit_password \
+  -e MYSQL_ROOT_PASSWORD=timefruit_root_password \
+  -p 3306:3306 \
+  mysql:8.0
 ```
 
 #### バックエンド
@@ -84,13 +85,17 @@ npm run dev
 
 ```sql
 CREATE TABLE time_records (
-  id SERIAL PRIMARY KEY,
+  id INT AUTO_INCREMENT PRIMARY KEY,
   category VARCHAR(20) NOT NULL,
   hours DECIMAL(3,1) NOT NULL,
   memo TEXT,
-  date DATE NOT NULL DEFAULT CURRENT_DATE,
+  date DATE NOT NULL DEFAULT (CURRENT_DATE),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Create index for better query performance
+CREATE INDEX idx_time_records_date ON time_records(date);
+CREATE INDEX idx_time_records_category ON time_records(category);
 ```
 
 ## 🔌 API エンドポイント
@@ -124,6 +129,7 @@ curl http://localhost:3001/api/time-records/today
 ## 🎨 UI/UX
 
 - **レスポンシブデザイン**: モバイル・デスクトップ対応
+- **SPA**: Nuxt.js SPAモードによるシングルページアプリケーション
 - **美しいグラデーション**: 紫系のモダンなデザイン
 - **日本語対応**: フル日本語インターフェース
 - **リアルタイム更新**: 記録追加/削除時の即座の画面更新
@@ -134,6 +140,7 @@ curl http://localhost:3001/api/time-records/today
 ```
 timefruit/
 ├── docker-compose.yml      # Docker Compose設定
+├── docker-compose.prod.yml # 本番環境用設定
 ├── backend/                # バックエンド
 │   ├── src/
 │   │   ├── controllers/    # コントローラー
@@ -144,11 +151,9 @@ timefruit/
 │   ├── package.json
 │   └── Dockerfile
 ├── frontend/               # フロントエンド
-│   ├── src/
-│   │   ├── components/     # Reactコンポーネント
-│   │   ├── services/       # API通信
-│   │   ├── types/          # TypeScript型定義
-│   │   └── App.tsx         # アプリケーション本体
+│   ├── app/                # Nuxt.js アプリケーション
+│   ├── public/             # 静的ファイル
+│   ├── nuxt.config.ts      # Nuxt.js 設定
 │   ├── package.json
 │   └── Dockerfile
 └── db/                     # データベース
@@ -171,14 +176,14 @@ timefruit/
 
 ### Backend
 - `DB_HOST`: データベースホスト（デフォルト: localhost）
-- `DB_PORT`: データベースポート（デフォルト: 5432）
+- `DB_PORT`: データベースポート（デフォルト: 3306）
 - `DB_NAME`: データベース名（デフォルト: timefruit）
 - `DB_USER`: データベースユーザー（デフォルト: timefruit_user）
 - `DB_PASSWORD`: データベースパスワード（デフォルト: timefruit_password）
 - `PORT`: サーバーポート（デフォルト: 3001）
 
 ### Frontend
-- `VITE_BACKEND_URL`: バックエンドURL（デフォルト: http://localhost:3001）
+- `NUXT_PUBLIC_BACKEND_URL`: バックエンドURL（デフォルト: http://localhost:3001）
 
 ## 📝 ライセンス
 

@@ -1,0 +1,76 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: timefruit-db
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: timefruit
+      POSTGRES_USER: timefruit_user
+      POSTGRES_PASSWORD: timefruit_password
+    networks:
+      - timefruit-network
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U timefruit_user -d timefruit"]
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: timefruit-backend
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - FRONTEND_URL=http://localhost:3000
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=timefruit
+      - DB_USER=timefruit_user
+      - DB_PASSWORD=timefruit_password
+    restart: unless-stopped
+    networks:
+      - timefruit-network
+    volumes:
+      - ./backend:/app
+      - backend_node_modules:/app/node_modules
+    working_dir: /app
+    command: sh -c "npm install && npm run dev"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: timefruit-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - NUXT_PUBLIC_BACKEND_URL=http://localhost:3001
+    restart: unless-stopped
+    networks:
+      - timefruit-network
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+    working_dir: /app
+    command: sh -c "npm install && npm run dev"
+
+networks:
+  timefruit-network:
+    driver: bridge
+
+volumes:
+  backend_node_modules:
+  frontend_node_modules:
+  postgres_data:

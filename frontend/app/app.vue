@@ -1,3 +1,70 @@
+<template>
+  <div class="app">
+    <header class="app-header">
+      <h1>🍎 Timefruit</h1>
+      <p>時間投資記録アプリ</p>
+    </header>
+
+    <main class="app-main">
+      <div class="container">
+        <div class="form-section">
+          <TimeRecordForm :on-record-created="fetchTodaysRecords" />
+        </div>
+
+        <div class="list-section">
+          <div v-if="loading" class="loading">
+            記録を読み込み中...
+          </div>
+          
+          <div v-else-if="error" class="error">
+            <p>{{ error }}</p>
+            <button @click="fetchTodaysRecords">再試行</button>
+          </div>
+          
+          <TimeRecordList
+            v-else
+            :records="todaysRecords"
+            :on-record-deleted="fetchTodaysRecords"
+          />
+        </div>
+      </div>
+    </main>
+  </div>
+</template>
+
+<script setup lang="ts">
+import type { TimeRecord } from './types/TimeRecord'
+import { TimeRecordService } from './services/timeRecordService'
+
+const todaysRecords = ref<TimeRecord[]>([])
+const loading = ref(true)
+const error = ref<string | null>(null)
+
+const fetchTodaysRecords = async () => {
+  try {
+    loading.value = true
+    const response = await TimeRecordService.getTodaysTimeRecords()
+    
+    if (response.success && response.data) {
+      todaysRecords.value = response.data
+    } else {
+      error.value = 'Failed to fetch today\'s records'
+    }
+  } catch (err) {
+    error.value = 'Failed to connect to server'
+    console.error('Error fetching records:', err)
+  } finally {
+    loading.value = false
+  }
+}
+
+// Fetch records on mount
+onMounted(() => {
+  fetchTodaysRecords()
+})
+</script>
+
+<style>
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -321,3 +388,4 @@ body {
     margin-top: 0.5rem;
   }
 }
+</style>

@@ -52,52 +52,6 @@ docker compose up --build
 - **バックエンドAPI**: http://localhost:3001
 - **ヘルスチェック**: http://localhost:3001/health
 
-## 🛠️ 開発環境
-
-### 個別起動（開発時）
-
-#### データベース
-```bash
-docker run -d --name timefruit-db \
-  -e MYSQL_DATABASE=timefruit \
-  -e MYSQL_USER=timefruit_user \
-  -e MYSQL_PASSWORD=timefruit_password \
-  -e MYSQL_ROOT_PASSWORD=timefruit_root_password \
-  -p 3306:3306 \
-  mysql:8.0
-```
-
-#### バックエンド
-```bash
-cd backend
-npm install
-npm run dev
-```
-
-#### フロントエンド
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-## 📊 データベーススキーマ
-
-```sql
-CREATE TABLE time_records (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  category VARCHAR(20) NOT NULL,
-  hours DECIMAL(3,1) NOT NULL,
-  memo TEXT,
-  date DATE NOT NULL DEFAULT (CURRENT_DATE),
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Create index for better query performance
-CREATE INDEX idx_time_records_date ON time_records(date);
-CREATE INDEX idx_time_records_category ON time_records(category);
-```
-
 ## 🔌 API エンドポイント
 
 | Method | Endpoint | 説明 |
@@ -108,69 +62,6 @@ CREATE INDEX idx_time_records_category ON time_records(category);
 | POST | `/api/time-records` | 新規記録作成 |
 | DELETE | `/api/time-records/:id` | 記録削除 |
 
-### APIリクエスト例
-
-#### 記録作成
-```bash
-curl -X POST http://localhost:3001/api/time-records \
-  -H "Content-Type: application/json" \
-  -d '{
-    "category": "仕事",
-    "hours": 2.5,
-    "memo": "プロジェクトの会議"
-  }'
-```
-
-#### 今日の記録取得
-```bash
-curl http://localhost:3001/api/time-records/today
-```
-
-## 🎨 UI/UX
-
-- **レスポンシブデザイン**: モバイル・デスクトップ対応
-- **SPA**: Nuxt.js SPAモードによるシングルページアプリケーション
-- **美しいグラデーション**: 紫系のモダンなデザイン
-- **日本語対応**: フル日本語インターフェース
-- **リアルタイム更新**: 記録追加/削除時の即座の画面更新
-- **バリデーション**: フォーム入力の検証機能
-
-## 📁 プロジェクト構成
-
-```
-timefruit/
-├── docker-compose.yml      # Docker Compose設定
-├── docker-compose.prod.yml # 本番環境用設定
-├── backend/                # バックエンド
-│   ├── src/
-│   │   ├── controllers/    # コントローラー
-│   │   ├── models/         # データモデル
-│   │   ├── routes/         # ルート定義
-│   │   ├── utils/          # ユーティリティ
-│   │   └── server.ts       # サーバーエントリーポイント
-│   ├── package.json
-│   └── Dockerfile
-├── frontend/               # フロントエンド
-│   ├── app/                # Nuxt.js アプリケーション
-│   ├── public/             # 静的ファイル
-│   ├── nuxt.config.ts      # Nuxt.js 設定
-│   ├── package.json
-│   └── Dockerfile
-└── db/                     # データベース
-    └── init/
-        └── 01-create-tables.sql
-```
-
-## 🧪 動作確認済み機能
-
-- ✅ フォーム入力バリデーション
-- ✅ リアルタイム合計時間計算
-- ✅ レスポンシブデザイン
-- ✅ エラーハンドリング・ローディング状態
-- ✅ フォーム送信後の自動リセット
-- ✅ 記録削除機能
-- ✅ 日本語テキストサポート
-- ✅ Dockerコンテナヘルスチェック
 
 ## 🔧 環境変数
 
@@ -188,7 +79,3 @@ timefruit/
 ## 📝 ライセンス
 
 このプロジェクトはMITライセンスの下で公開されています。
-
-## 🤝 コントリビューション
-
-プルリクエストやイシューの報告を歓迎します！

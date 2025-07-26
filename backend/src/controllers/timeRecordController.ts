@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import pool from '../utils/database';
+import { AppDataSource } from '../utils/data-source';
 import { TimeRecord, CreateTimeRecordRequest } from '../models/TimeRecord';
 import { createTimeRecordSchema } from '../utils/validation';
 
@@ -17,25 +17,21 @@ export const createTimeRecord = async (req: Request, res: Response) => {
 
     const { category, hours, memo }: CreateTimeRecordRequest = value;
 
-    const [result] = await pool.execute(
-      'INSERT INTO time_records (category, hours, memo) VALUES (?, ?, ?)',
-      [category, hours, memo || null]
-    );
+    const timeRecordRepository = AppDataSource.getRepository(TimeRecord);
+    
+    const newRecord = timeRecordRepository.create({
+      category,
+      hours,
+      memo,
+      date: new Date().toISOString().split('T')[0]
+    });
 
-    const insertResult = result as any;
-    const insertId = insertResult.insertId;
-
-    const [selectResult] = await pool.execute(
-      'SELECT * FROM time_records WHERE id = ?',
-      [insertId]
-    );
-
-    const newRecord: TimeRecord = (selectResult as any[])[0];
+    const savedRecord = await timeRecordRepository.save(newRecord);
 
     res.status(201).json({
       success: true,
       message: 'Time record created successfully',
-      data: newRecord
+      data: savedRecord
     });
   } catch (error) {
     console.error('Error creating time record:', error);
@@ -50,12 +46,12 @@ export const getTodaysTimeRecords = async (req: Request, res: Response) => {
   try {
     const today = new Date().toISOString().split('T')[0];
     
-    const [result] = await pool.execute(
-      'SELECT * FROM time_records WHERE date = ? ORDER BY created_at DESC',
-      [today]
-    );
-
-    const records: TimeRecord[] = result as TimeRecord[];
+    const timeRecordRepository = AppDataSource.getRepository(TimeRecord);
+    
+    const records = await timeRecordRepository.find({
+      where: { date: today },
+      order: { created_at: 'DESC' }
+    });
 
     res.json({
       success: true,
@@ -73,11 +69,14 @@ export const getTodaysTimeRecords = async (req: Request, res: Response) => {
 
 export const getAllTimeRecords = async (req: Request, res: Response) => {
   try {
-    const [result] = await pool.execute(
-      'SELECT * FROM time_records ORDER BY date DESC, created_at DESC'
-    );
-
-    const records: TimeRecord[] = result as TimeRecord[];
+    const timeRecordRepository = AppDataSource.getRepository(TimeRecord);
+    
+    const records = await timeRecordRepository.find({
+      order: { 
+        date: 'DESC',
+        created_at: 'DESC'
+      }
+    });
 
     res.json({
       success: true,
@@ -97,24 +96,20 @@ export const deleteTimeRecord = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    const [selectResult] = await pool.execute(
-      'SELECT * FROM time_records WHERE id = ?',
-      [id]
-    );
+    const timeRecordRepository = AppDataSource.getRepository(TimeRecord);
+    
+    const recordToDelete = await timeRecordRepository.findOne({
+      where: { id: parseInt(id) }
+    });
 
-    if ((selectResult as any[]).length === 0) {
+    if (!recordToDelete) {
       return res.status(404).json({
         success: false,
         message: 'Time record not found'
       });
     }
 
-    const recordToDelete = (selectResult as any[])[0];
-
-    await pool.execute(
-      'DELETE FROM time_records WHERE id = ?',
-      [id]
-    );
+    await timeRecordRepository.remove(recordToDelete);
 
     res.json({
       success: true,

@@ -1,7 +1,9 @@
+import 'reflect-metadata';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import { AppDataSource } from './utils/data-source';
 import timeRecordsRouter from './routes/timeRecords';
 
 const app = express();
@@ -46,7 +48,17 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 Timefruit Backend API server running on port ${PORT}`);
-  console.log(`📊 Health check: http://localhost:${PORT}/health`);
-});
+// Initialize TypeORM and start server
+AppDataSource.initialize()
+  .then(() => {
+    console.log('✅ TypeORM Data Source has been initialized!');
+    
+    app.listen(PORT, () => {
+      console.log(`🚀 Timefruit Backend API server running on port ${PORT}`);
+      console.log(`📊 Health check: http://localhost:${PORT}/health`);
+    });
+  })
+  .catch((error) => {
+    console.error('❌ Error during Data Source initialization:', error);
+    process.exit(1);
+  });

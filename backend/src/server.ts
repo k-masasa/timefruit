@@ -10,10 +10,28 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Middleware
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: false, // 開発環境ではCSPを無効化
+  crossOriginResourcePolicy: false // CORSとの競合を避ける
+}));
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  credentials: true
+  origin: function (origin, callback) {
+    // 開発環境では全オリジンを許可
+    if (process.env.NODE_ENV === 'development') {
+      callback(null, true);
+    } else {
+      // 本番環境では特定のオリジンのみ許可
+      const allowedOrigins = [process.env.FRONTEND_URL || 'http://localhost:3000'];
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 app.use(morgan('combined'));
 app.use(express.json());

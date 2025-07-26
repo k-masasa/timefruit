@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  mysql:
+    # ポートマッピングを削除（本番ではDBを外部公開しない）
+    ports: []
+    # ヘルスチェックのパスワードを環境変数から取得
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "${DB_USER}", "-p${DB_PASSWORD}"]
+  
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    # 開発用のvolumeマウントを無効化
+    volumes: []
+    # 本番用コマンド
+    command: npm start
+    # 本番環境では外部公開しない（Nginxやロードバランサー経由でアクセス）
+    ports:
+      - "127.0.0.1:3001:3001"
+  
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    # 開発用のvolumeマウントを無効化
+    volumes: []
+    # 本番用コマンド
+    command: npm start
+    # 本番環境では外部公開しない（Nginxやロードバランサー経由でアクセス）
+    ports:
+      - "127.0.0.1:3000:3000"
+  
+  # 本番環境用のNginxリバースプロキシ（オプション）
+  nginx:
+    image: nginx:alpine
+    container_name: timefruit-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    networks:
+      - timefruit-network
+    depends_on:
+      - frontend
+      - backend
+    restart: unless-stopped

@@ -6,10 +6,10 @@ services:
     ports:
       - "3306:3306"
     environment:
-      MYSQL_DATABASE: timefruit
-      MYSQL_USER: timefruit_user
-      MYSQL_PASSWORD: timefruit_password
-      MYSQL_ROOT_PASSWORD: timefruit_root_password
+      MYSQL_DATABASE: ${DB_NAME:-timefruit}
+      MYSQL_USER: ${DB_USER:-timefruit_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-timefruit_password}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-timefruit_root_password}
     networks:
       - timefruit-network
     volumes:
@@ -28,14 +28,14 @@ services:
     ports:
       - "3001:3001"
     environment:
-      - NODE_ENV=development
-      - PORT=3001
-      - FRONTEND_URL=http://localhost:3000
-      - DB_HOST=mysql
-      - DB_PORT=3306
-      - DB_NAME=timefruit
-      - DB_USER=timefruit_user
-      - DB_PASSWORD=timefruit_password
+      - NODE_ENV=${NODE_ENV:-development}
+      - PORT=${PORT:-3001}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
+      - DB_HOST=${DB_HOST:-mysql}
+      - DB_PORT=${DB_PORT:-3306}
+      - DB_NAME=${DB_NAME:-timefruit}
+      - DB_USER=${DB_USER:-timefruit_user}
+      - DB_PASSWORD=${DB_PASSWORD:-timefruit_password}
     restart: unless-stopped
     networks:
       - timefruit-network
@@ -56,8 +56,8 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NODE_ENV=development
-      - NUXT_PUBLIC_BACKEND_URL=http://localhost:3001
+      - NODE_ENV=${NODE_ENV:-development}
+      - NUXT_PUBLIC_BACKEND_URL=${NUXT_PUBLIC_BACKEND_URL:-http://localhost:3001}
     restart: unless-stopped
     networks:
       - timefruit-network
